@@ -1,6 +1,5 @@
 // SuccessfulSubmission.js
 import React from 'react';
-import './SubscribeForm.css'
 
 function SuccessfulSubmission({ namesID }) {
   return (

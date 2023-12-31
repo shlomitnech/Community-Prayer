@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './PrayerRequestForm.css';
+import './Forms.css';
 
 function PrayerRequestForm() {
     const [formData, setFormData] = useState({
@@ -36,7 +36,6 @@ function PrayerRequestForm() {
             // Handle the response from your Lambda function or API
             if (data.statusCode === 200) {
               alert('Prayer request submitted successfully!');
-              // Optionally, reset the form
               setFormData({
                 TefilahID: 'HEALTH',
                 HebrewName: '',

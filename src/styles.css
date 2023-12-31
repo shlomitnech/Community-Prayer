@@ -38,11 +38,11 @@ body {
 }
 
 .nav li.active{
-    background-color: #555;
+    background-color: hsl(210, 68%, 63%);;
 
 }
 
 .nav li:hover{
-    background-color: #777;
+    background-color: hsl(210, 100%, 72%);
 
 }
