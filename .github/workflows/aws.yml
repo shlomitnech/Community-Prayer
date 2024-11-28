@@ -1,5 +1,3 @@
-
-
 name: Deploy to Amazon
 
 on:
@@ -7,12 +5,12 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: us-east-1         
+  AWS_REGION: us-east-1                
 
 
 permissions:
-  id-token: write 
-  contents: read  
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
 
 
 jobs:
@@ -34,5 +32,3 @@ jobs:
 
     - name: AWS Who Am I
       run: aws sts get-caller-identity
-
-  

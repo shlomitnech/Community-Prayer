@@ -3,7 +3,7 @@
 version = 0.1
 
 [default.global.parameters]
-stack_name = "lambda-python3.13"
+stack_name = "aws-connect"
 
 [default.build.parameters]
 cached = true
