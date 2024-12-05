@@ -5,13 +5,11 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: us-east-1                
-
+  AWS_REGION: us-east-1
 
 permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read  # This is required for actions/checkout
-
+  id-token: write 
+  contents: read
 
 jobs:
   deploy:
@@ -26,9 +24,9 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Referencing the secret
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Referencing the secret
         aws-region: ${{ env.AWS_REGION }}
-        role-to-assume: arn:aws:iam::893545707099:role/GithubActions
-        role-session-name: GithubActions
-
+    
     - name: AWS Who Am I
       run: aws sts get-caller-identity
