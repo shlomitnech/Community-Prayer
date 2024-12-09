@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-app
+
+  Sample SAM Template for sam-app
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  NamesSubmittedTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: NamesSubmitted
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "NamesID"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "NamesID"
+          KeyType: "HASH"
+
+  SubmitNameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: submit_name/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: NamesSubmitted
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+            
+  UpdateNamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: update_names/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Events:
+        UpdateNames:
+          Type: Api
+          Properties:
+            Path: /update-names
+            Method: post
+
+  DeleteNamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: delete_names/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Events:
+        UpdateNames:
+          Type: Api
+          Properties:
+            Path: /delete-names
+            Method: post
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+

@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  NamesSubmittedTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: NamesSubmitted
+      AttributeDefinitions:
+      - AttributeName: NamesID
+        AttributeType: S
+      - AttributeName: TefilahID
+        AttributeType: S
+      KeySchema:
+      - AttributeName: NamesID
+        KeyType: HASH
+      - AttributeName: TefilahID
+        KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+      - Key: Environment
+        Value: Production
+  SubmitNamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SubmitNames
+      Runtime: python3.12
+      Handler: SubmitNames.lambda_handler
+      CodeUri: SubmitNamesFunction
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: NamesSubmittedTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: NamesSubmittedTable
+    Metadata:
+      SamResourceId: SubmitNamesFunction
+  UpdateNamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: UpdateNames
+      Runtime: python3.12
+      Handler: UpdateNames.lambda_handler
+      CodeUri: UpdateNamesFunction
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: NamesSubmittedTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: NamesSubmittedTable
+    Metadata:
+      SamResourceId: UpdateNamesFunction
+  WeeklyEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: WeeklyEmail
+      Runtime: python3.12
+      Handler: WeeklyEmail.lambda_handler
+      CodeUri: WeeklyEmailFunction
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: NamesSubmittedTable
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: NamesSubmittedTable
+    Metadata:
+      SamResourceId: WeeklyEmailFunction
+Outputs:
+  TableName:
+    Value:
+      Ref: NamesSubmittedTable
+    Export:
+      Name: NamesSubmittedTableName
+  SubmitNamesFunctionArn:
+    Value:
+      Fn::GetAtt:
+      - SubmitNamesFunction
+      - Arn
+    Export:
+      Name: SubmitNamesFunctionArn
+  UpdateNamesFunctionArn:
+    Value:
+      Fn::GetAtt:
+      - UpdateNamesFunction
+      - Arn
+    Export:
+      Name: UpdateNamesFunctionArn
+  WeeklyEmailFunctionArn:
+    Value:
+      Fn::GetAtt:
+      - WeeklyEmailFunction
+      - Arn
+    Export:
+      Name: WeeklyEmailFunctionArn
