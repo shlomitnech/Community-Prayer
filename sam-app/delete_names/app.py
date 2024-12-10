@@ -8,7 +8,6 @@ table_names = dynamodb.Table('NamesSubmitted')
 
 def lambda_handler(event, context):
     try:
-        # Parse the request body to get NamesID and TefilahID
         body = json.loads(event.get('body', '{}'))
         names_id = body.get('NamesID')
         #tefilah_id = body.get('TefilahID')
