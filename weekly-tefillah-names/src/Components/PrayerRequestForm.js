@@ -17,9 +17,9 @@ function PrayerRequestForm() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submitApiEndpoint = 'https://qeiro6fqn1.execute-api.us-east-1.amazonaws.com/dev'; // Submit names API
+  //const submitApiEndpoint = 'https://qeiro6fqn1.execute-api.us-east-1.amazonaws.com/dev'; // Submit names API
   const subscribeApiEndpoint = 'https://pm67q3uot8.execute-api.us-east-1.amazonaws.com/stage1/subscribeEmails'; // Subscribe API endpoint
-
+  const submitApiEndpoint = "https://21v6quf6tg.execute-api.us-east-1.amazonaws.com/Prod/submit-name"
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -38,13 +38,20 @@ function PrayerRequestForm() {
     setIsSubmitting(true);
 
     try {
+      // // Submit the name request
+      // const nameResponse = await fetch(submitApiEndpoint, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(formData),
+      // });
+
+      const queryParams = new URLSearchParams(formData).toString();
+
       // Submit the name request
-      const nameResponse = await fetch(submitApiEndpoint, {
+      const nameResponse = await fetch(`${submitApiEndpoint}?${queryParams}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
       });
 
       const nameData = await nameResponse.json();

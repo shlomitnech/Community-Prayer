@@ -9,11 +9,21 @@ table_name = 'NamesSubmitted'
 
 def lambda_handler(event, context):
     # Extract input fields from the event
-    tefilah_type = event['TefilahID']
-    hebrew = event['HebrewName']
-    english = event['EnglishName']
-    notes = event['Notes']
-    email = event['Email'].lower() 
+    if 'body' in event:
+        body = json.loads(event['body'])
+    else:
+        body = event  # For direct invocation
+
+    tefilah_type = body.get('TefilahID')
+    hebrew = body.get('HebrewName')
+    english = body.get('EnglishName')
+    notes = body.get('Notes')
+    email = body.get('Email').lower()
+    #tefilah_type = event['TefilahID']
+    # = event['HebrewName']
+    #english = event['EnglishName']
+    #notes = event['Notes']
+    #email = event['Email'].lower() 
 
     # Get the current time in ISO format
     now = datetime.now(timezone.utc).isoformat()

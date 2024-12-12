@@ -18,9 +18,38 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "NamesID"
           AttributeType: "S"
+        - AttributeName: "Email"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "NamesID"
           KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: Email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+  AllSubscribersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AllSubscribers
+      AttributeDefinitions:
+        - AttributeName: SubscriberID
+          AttributeType: S
+        - AttributeName: Email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: SubscriberID
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: Email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
 
   SubmitNameFunction:
     Type: AWS::Serverless::Function
@@ -31,15 +60,42 @@ Resources:
       Architectures:
         - x86_64
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: NamesSubmitted
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:*
+              Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
         HelloWorld:
           Type: Api
           Properties:
-            Path: /hello
-            Method: get
-            
+            Path: /submit-name
+            Method: post
+
+  ReadNamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: read_names/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:*
+              Resource:
+                - !GetAtt NamesSubmittedTable.Arn
+                - !Sub "${NamesSubmittedTable.Arn}/index/EmailIndex"
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /read-names
+            Method: Any
+
+
   UpdateNamesFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -48,6 +104,12 @@ Resources:
       Runtime: python3.12
       Architectures:
         - x86_64
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:*
+              Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
         UpdateNames:
           Type: Api
@@ -63,6 +125,14 @@ Resources:
       Runtime: python3.12
       Architectures:
         - x86_64
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:DeleteItem
+              Resource: 
+                - !GetAtt NamesSubmittedTable.Arn
+                
       Events:
         UpdateNames:
           Type: Api
@@ -70,8 +140,24 @@ Resources:
             Path: /delete-names
             Method: post
 
+
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: NamesAPI
+      StageName: Stage
+      Description: API for managing names
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Cors:
+        AllowOrigins: "'*'"
+        AllowMethods: "'GET,POST,PUT,DELETE'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        MaxAge: 600
+
+
 Outputs:
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-
