@@ -7,7 +7,14 @@ Description: >
 
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 10
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Architectures:
+      - arm64
+    Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NamesSubmittedTable
 
 Resources:
   NamesSubmittedTable:
@@ -30,6 +37,7 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
   AllSubscribersTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -55,16 +63,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: submit_name/
-      Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:*
-              Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
         HelloWorld:
           Type: Api
@@ -76,18 +74,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: read_names/
-      Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:*
-              Resource:
-                - !GetAtt NamesSubmittedTable.Arn
-                - !Sub "${NamesSubmittedTable.Arn}/index/EmailIndex"
       Events:
         HelloWorld:
           Type: Api
@@ -100,16 +86,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: update_names/
-      Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:*
-              Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
         UpdateNames:
           Type: Api
@@ -121,18 +97,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: delete_names/
-      Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:DeleteItem
-              Resource: 
-                - !GetAtt NamesSubmittedTable.Arn
-                
       Events:
         UpdateNames:
           Type: Api
