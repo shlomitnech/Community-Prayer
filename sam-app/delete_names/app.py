@@ -35,7 +35,12 @@ def lambda_handler(event, context):
         # Return success response
         return {
             'statusCode': 200,
-            'body': json.dumps(f"Name with ID {names_id} deleted successfully")
+            'body': json.dumps(f"Name with ID {names_id} deleted successfully"),
+            "headers": {
+            "Access-Control-Allow-Origin": "*",  
+            "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            }
         }
 
     except Exception as e:

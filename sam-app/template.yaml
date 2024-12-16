@@ -8,6 +8,11 @@ Description: >
 Globals:
   Function:
     Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'content-type'"
+      AllowOrigin: "'*'"
 
 Resources:
   NamesSubmittedTable:
@@ -30,6 +35,7 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
   AllSubscribersTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -66,11 +72,18 @@ Resources:
                 - dynamodb:*
               Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
-        HelloWorld:
+        SubmitNameApi:
           Type: Api
           Properties:
             Path: /submit-name
             Method: post
+            RestApiId: !Ref ServerlessRestApi
+        SubmitNameOptions:
+          Type: Api
+          Properties:
+            Path: /submit-name
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
 
   ReadNamesFunction:
     Type: AWS::Serverless::Function
@@ -89,11 +102,12 @@ Resources:
                 - !GetAtt NamesSubmittedTable.Arn
                 - !Sub "${NamesSubmittedTable.Arn}/index/EmailIndex"
       Events:
-        HelloWorld:
+        ReadNamesApi:
           Type: Api
           Properties:
             Path: /read-names
-            Method: Any
+            Method: get   
+            RestApiId: !Ref ServerlessRestApi
 
 
   UpdateNamesFunction:
@@ -111,11 +125,18 @@ Resources:
                 - dynamodb:*
               Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
-        UpdateNames:
+        UpdateNamesApi:
           Type: Api
           Properties:
             Path: /update-names
-            Method: post
+            Method: any
+            RestApiId: !Ref ServerlessRestApi
+        UpdateNamesOptions:
+          Type: Api
+          Properties:
+            Path: /update-names
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
 
   DeleteNamesFunction:
     Type: AWS::Serverless::Function
@@ -132,32 +153,76 @@ Resources:
                 - dynamodb:DeleteItem
               Resource: 
                 - !GetAtt NamesSubmittedTable.Arn
-                
       Events:
-        UpdateNames:
+        DeleteNamesApi:
           Type: Api
           Properties:
             Path: /delete-names
-            Method: post
-
+            Method: any
+            RestApiId: !Ref ServerlessRestApi
+        DeleteNamesOptions:
+          Type: Api
+          Properties:
+            Path: /delete-names
+            Method: options
+            RestApiId: !Ref ServerlessRestApi
 
   ServerlessRestApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: NamesAPI
-      StageName: Stage
-      Description: API for managing names
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
+      StageName: Prod
       Cors:
-        AllowOrigins: "'*'"
-        AllowMethods: "'GET,POST,PUT,DELETE'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        MaxAge: 600
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        Access-Control-Allow-Origin: '*'
+        MaxAge: "'600'"
+        AllowCredentials: true
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: NamesAPI
+        paths:
+          /read-names:
+            get:
+            x-amazon-apigateway-integration:
+              uri:
+                !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReadNamesFunction.Arn}/invocations"
+              httpMethod: GET
+              type: aws_proxy
+            responses:
+              '200':
+                description: Successful GET request
+                headers:
+                  Access-Control-Allow-Origin:
+                    schema:
+                      type: string
+                      example: '*'
+          options:
+            responses:
+              '200':
+                description: CORS preflight response
+                headers:
+                  Access-Control-Allow-Origin:
+                    schema:
+                      type: string
+                      example: '*'
+                  Access-Control-Allow-Methods:
+                    schema:
+                      type: string
+                      example: GET,POST,OPTIONS
+                  Access-Control-Allow-Headers:
+                    schema:
+                      type: string
+                      example: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token
+            x-amazon-apigateway-integration:
+              type: mock
+              requestTemplates:
+                application/json: '{"statusCode": 200}'            
 
 
 Outputs:
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/" 

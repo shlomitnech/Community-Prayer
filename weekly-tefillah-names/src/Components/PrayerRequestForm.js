@@ -19,7 +19,7 @@ function PrayerRequestForm() {
 
   //const submitApiEndpoint = 'https://qeiro6fqn1.execute-api.us-east-1.amazonaws.com/dev'; // Submit names API
   const subscribeApiEndpoint = 'https://pm67q3uot8.execute-api.us-east-1.amazonaws.com/stage1/subscribeEmails'; // Subscribe API endpoint
-  const submitApiEndpoint = "https://21v6quf6tg.execute-api.us-east-1.amazonaws.com/Prod/submit-name"
+  const submitApiEndpoint = "hhttps://sr63twe8ij.execute-api.us-east-1.amazonaws.com/Prod/submit-name"
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));

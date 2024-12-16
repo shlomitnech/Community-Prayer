@@ -56,7 +56,12 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'message': 'Name updated successfully',
                 'updatedFields': response.get('Attributes', {})
-            })
+            }),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  
+                "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+                "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            }
         }
 
     except ClientError as e:
