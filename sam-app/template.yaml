@@ -3,16 +3,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   sam-app
 
-  Sample SAM Template for sam-app
-
 Globals:
   Function:
-    Timeout: 3
-  Api:
-    Cors:
-      AllowMethods: "'GET,POST,OPTIONS'"
-      AllowHeaders: "'content-type'"
-      AllowOrigin: "'*'"
+    Timeout: 10
+    Runtime: python3.13
+    Architectures:
+      - arm64
 
 Resources:
   NamesSubmittedTable:
@@ -47,12 +43,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: SubscriberID
-          KeyType: HASH
+          KeyType: "HASH"
       GlobalSecondaryIndexes:
         - IndexName: EmailIndex
           KeySchema:
             - AttributeName: Email
-              KeyType: HASH
+              KeyType: "HASH"
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
@@ -62,9 +58,6 @@ Resources:
     Properties:
       CodeUri: submit_name/
       Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
       Policies:
         - Statement:
             - Effect: Allow
@@ -72,52 +65,37 @@ Resources:
                 - dynamodb:*
               Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
-        SubmitNameApi:
+        SubmitNameApiEvent:
           Type: Api
           Properties:
             Path: /submit-name
             Method: post
-            RestApiId: !Ref ServerlessRestApi
-        SubmitNameOptions:
-          Type: Api
-          Properties:
-            Path: /submit-name
-            Method: options
-            RestApiId: !Ref ServerlessRestApi
 
   ReadNamesFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: read_names/
       Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
       Policies:
         - Statement:
             - Effect: Allow
               Action:
                 - dynamodb:*
               Resource:
-                - !GetAtt NamesSubmittedTable.Arn
-                - !Sub "${NamesSubmittedTable.Arn}/index/EmailIndex"
+              - !GetAtt NamesSubmittedTable.Arn
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NamesSubmitted/index/EmailIndex
       Events:
-        ReadNamesApi:
+        ReadNamesApiEvent:
           Type: Api
           Properties:
             Path: /read-names
-            Method: get   
-            RestApiId: !Ref ServerlessRestApi
-
+            Method: any
 
   UpdateNamesFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: update_names/
       Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
       Policies:
         - Statement:
             - Effect: Allow
@@ -125,104 +103,154 @@ Resources:
                 - dynamodb:*
               Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
-        UpdateNamesApi:
+        UpdateNamesApiEvent:
           Type: Api
           Properties:
             Path: /update-names
-            Method: any
-            RestApiId: !Ref ServerlessRestApi
-        UpdateNamesOptions:
-          Type: Api
-          Properties:
-            Path: /update-names
-            Method: options
-            RestApiId: !Ref ServerlessRestApi
+            Method: post
 
   DeleteNamesFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: delete_names/
       Handler: app.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
       Policies:
         - Statement:
             - Effect: Allow
               Action:
-                - dynamodb:DeleteItem
-              Resource: 
-                - !GetAtt NamesSubmittedTable.Arn
+                - dynamodb:*
+              Resource: !GetAtt NamesSubmittedTable.Arn
       Events:
-        DeleteNamesApi:
+        DeleteNamesApiEvent:
           Type: Api
           Properties:
             Path: /delete-names
-            Method: any
-            RestApiId: !Ref ServerlessRestApi
-        DeleteNamesOptions:
-          Type: Api
-          Properties:
-            Path: /delete-names
-            Method: options
-            RestApiId: !Ref ServerlessRestApi
+            Method: post
 
   ServerlessRestApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: NamesAPI
       StageName: Prod
+      Description: API for managing names
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
-        Access-Control-Allow-Origin: '*'
-        MaxAge: "'600'"
-        AllowCredentials: true
-      DefinitionBody:
-        openapi: 3.0.1
-        info:
-          title: NamesAPI
-        paths:
-          /read-names:
-            get:
-            x-amazon-apigateway-integration:
-              uri:
-                !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReadNamesFunction.Arn}/invocations"
-              httpMethod: GET
-              type: aws_proxy
-            responses:
-              '200':
-                description: Successful GET request
-                headers:
-                  Access-Control-Allow-Origin:
-                    schema:
-                      type: string
-                      example: '*'
-          options:
-            responses:
-              '200':
-                description: CORS preflight response
-                headers:
-                  Access-Control-Allow-Origin:
-                    schema:
-                      type: string
-                      example: '*'
-                  Access-Control-Allow-Methods:
-                    schema:
-                      type: string
-                      example: GET,POST,OPTIONS
-                  Access-Control-Allow-Headers:
-                    schema:
-                      type: string
-                      example: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token
-            x-amazon-apigateway-integration:
-              type: mock
-              requestTemplates:
-                application/json: '{"statusCode": 200}'            
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+        AllowHeaders:
+          - "Content-Type"
+        MaxAge: 600
+      GatewayResponses:
+        DEFAULT_4XX:
+          StatusCode: 400
+          ResponseHeaders:
+            Access-Control-Allow-Origin: "*"
+        DEFAULT_5XX:
+          StatusCode: 500
+          ResponseHeaders:
+            Access-Control-Allow-Origin: "*"
+
+  ReactAppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: weeklytefillahfrontend
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedMethods:
+              - GET
+            AllowedHeaders:
+              - "*"
+
+  ReactAppBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReactAppBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub "${ReactAppBucket.Arn}/*"
+            Principal: "*"
+          
+  ReactAppDeployment:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./frontend/build
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: "index.html"
+        Origins:
+          - Id: "ReactAppS3Origin"
+            DomainName: !GetAtt ReactAppBucket.DomainName
+            CustomOriginConfig:
+              OriginProtocolPolicy: "https-only"
+          - Id: "ApiGatewayOrigin"
+            DomainName: !Sub "${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginPath: "/Prod"
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: "https-only"
+        CacheBehaviors:
+          - PathPattern: "/api/*"
+            TargetOriginId: "ApiGatewayOrigin"
+            AllowedMethods:
+              - "HEAD"
+              - "GET"
+              - "POST"
+              - "PUT"
+              - "PATCH"
+              - "DELETE"
+              - "OPTIONS"
+            CachedMethods:
+              - "HEAD"
+              - "GET"
+            ViewerProtocolPolicy: "https-only"
+            Compress: true
+            CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6" 
+        DefaultCacheBehavior:
+          TargetOriginId: "ReactAppS3Origin"
+          AllowedMethods:
+            - "HEAD"
+            - "GET"
+            - "OPTIONS"
+          CachedMethods:
+            - "HEAD"
+            - "GET"
+          ViewerProtocolPolicy: "https-only"
+          Compress: true
+          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6" # CachingOptimized
+        PriceClass: "PriceClass_All"
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+          MinimumProtocolVersion: "TLSv1.2_2018"
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponsePagePath: "/index.html"
+            ResponseCode: 200
+            ErrorCachingMinTTL: 10
 
 
 Outputs:
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/" 
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
